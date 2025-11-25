@@ -1,1 +1,51 @@
+name: Build and deploy .NET API to Azure Web App
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  AZURE_WEBAPP_NAME: simpleAPI-Azure    # 👈 your App Service name
+  AZURE_WEBAPP_PACKAGE_PATH: './publish'   # output folder
+  DOTNET_VERSION: '8.0.x'                  # or 7.0.x / 6.0.x
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Get your code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) Install .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # 3) Restore dependencies
+      - name: Restore
+        run: dotnet restore
+
+      # 4) Build
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # (Optional) 5) Run tests – add later when you have test project
+      # - name: Test
+      #   run: dotnet test --no-build --verbosity normal
+
+      # 6) Publish to a folder
+      - name: Publish
+        run: dotnet publish --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      # 7) Deploy to Azure App Service using publish profile
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
